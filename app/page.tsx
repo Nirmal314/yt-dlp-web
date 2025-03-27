@@ -21,7 +21,7 @@ import {
   VideoResolution,
   AudioQuality as AudioQualityEnum
 } from '@/types';
-import { Progress } from '@/components/ui/progress';
+import CircularProgress from '@/components/circular-progress';
 
 export default function App() {
   const [url, setUrl] = useState('');
@@ -369,12 +369,23 @@ export default function App() {
             <CardHeader className="text-center">
               <CardTitle className="text-2xl font-bold text-primary">Download Progress</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-6 flex items-center flex-col">
               <div className="space-y-4">
-                <Progress value={progress.percentage} className="h-4 rounded-lg bg-accent/10" />
-                <p className="text-lg font-semibold text-center text-primary">
+                {/* <Progress value={progress.percentage} className="h-4 rounded-lg bg-accent/10" /> */}
+                <CircularProgress
+                  value={progress.percentage}
+                  size={165}
+                  strokeWidth={15}
+                  showLabel
+                  labelClassName="text-xl font-bold"
+                  renderLabel={(progress) => `${progress}%`}
+                  className="stroke-slate-500/25"
+                  progressClassName="stroke-slate-800"
+                />
+
+                {/* <p className="text-lg font-semibold text-center text-primary">
                   {progress.percentage_str} Complete
-                </p>
+                </p> */}
               </div>
               <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
                 <div className="text-right font-medium">Status:</div>
