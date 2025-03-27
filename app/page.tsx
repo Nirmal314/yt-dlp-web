@@ -11,60 +11,86 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { AudioFormat, AVQuality, DownloadOptionsUnion, Filter, MergeFormat, VideoFormat, VideoResolution } from '@/types';
+import {
+  AudioFormat,
+  AVQuality,
+  DownloadOptionsUnion,
+  Filter,
+  MergeFormat,
+  VideoFormat,
+  VideoResolution,
+  AudioQuality as AudioQualityEnum
+} from '@/types';
 
-
-
-function App() {
+export default function App() {
   const [url, setUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [options, setOptions] = useState<DownloadOptionsUnion>({
-    filter: 'videoonly',
-    format: 'mp4',
+    filter: Filter.VideoOnly,
+    format: VideoFormat.MP4,
     embedSubs: false,
     embedThumbnail: false,
-    quality: '480p'
+    quality: VideoResolution.R480P,
   });
 
-  const videoResolutions: VideoResolution[] = ['2160p', '1440p', '1080p', '720p', '480p', '360p', '240p', '144p', 'highest', 'lowest'];
-  const basicVideoFormats: VideoFormat[] = ['mp4', 'webm'];
-  const mergeFormats: MergeFormat[] = ['mkv', 'mp4', 'ogg', 'webm', 'flv'];
-  const audioFormats: AudioFormat[] = ['aac', 'flac', 'mp3', 'm4a', 'opus', 'vorbis', 'wav', 'alac'];
-  const avQualityOptions: AVQuality[] = ['highest', 'lowest'];
+  const videoResolutions: VideoResolution[] = [
+    VideoResolution.R2160P,
+    VideoResolution.R1440P,
+    VideoResolution.R1080P,
+    VideoResolution.R720P,
+    VideoResolution.R480P,
+    VideoResolution.R360P,
+    VideoResolution.R240P,
+    VideoResolution.R144P,
+    VideoResolution.Highest,
+    VideoResolution.Lowest,
+  ];
+  const basicVideoFormats: VideoFormat[] = [VideoFormat.MP4, VideoFormat.WEBM];
+  const mergeFormats: MergeFormat[] = [MergeFormat.MKV, MergeFormat.MP4, MergeFormat.OGG, MergeFormat.WEBM, MergeFormat.FLV];
+  const audioFormats: AudioFormat[] = [
+    AudioFormat.AAC,
+    AudioFormat.FLAC,
+    AudioFormat.MP3,
+    AudioFormat.M4A,
+    AudioFormat.OPUS,
+    AudioFormat.VORBIS,
+    AudioFormat.WAV,
+    AudioFormat.ALAC,
+  ];
+  const avQualityOptions: AVQuality[] = [AVQuality.Highest, AVQuality.Lowest];
 
   useEffect(() => {
-    if (options.filter === 'audioonly') {
+    if (options.filter === Filter.AudioOnly) {
       setOptions({
-        filter: 'audioonly',
-        format: 'mp3',
+        filter: Filter.AudioOnly,
+        format: AudioFormat.MP3,
         embedSubs: options.embedSubs,
         embedThumbnail: options.embedThumbnail,
-        quality: 5
+        quality: AudioQualityEnum.Q5,
       });
-    } else if (options.filter === 'audioandvideo') {
+    } else if (options.filter === Filter.AudioAndVideo) {
       setOptions({
-        filter: 'audioandvideo',
-        format: 'mp4',
+        filter: Filter.AudioAndVideo,
+        format: VideoFormat.MP4,
         embedSubs: options.embedSubs,
         embedThumbnail: options.embedThumbnail,
-        quality: 'highest'
+        quality: AVQuality.Highest,
       });
-    } else if (options.filter === 'mergevideo') {
+    } else if (options.filter === Filter.MergeVideo) {
       setOptions({
-        filter: 'mergevideo',
-        format: 'mp4',
+        filter: Filter.MergeVideo,
+        format: MergeFormat.MP4,
         embedSubs: options.embedSubs,
         embedThumbnail: options.embedThumbnail,
-        quality: '1080p'
+        quality: VideoResolution.R1080P,
       });
     } else {
-      // videoonly
       setOptions({
-        filter: 'videoonly',
-        format: 'mp4',
+        filter: Filter.VideoOnly,
+        format: VideoFormat.MP4,
         embedSubs: options.embedSubs,
         embedThumbnail: options.embedThumbnail,
-        quality: '1080p'
+        quality: VideoResolution.R1080P,
       });
     }
   }, [options.filter]);
@@ -80,30 +106,33 @@ function App() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!validateUrl(url)) {
       toast.error('Invalid URL. Please enter a valid YouTube or YouTube Music URL.');
       return;
     }
     setIsLoading(true);
+
+    console.log({ url, options })
     setTimeout(() => setIsLoading(false), 2000);
   };
 
   const renderFormatOptions = () => {
-    if (options.filter === 'videoonly' || options.filter === 'audioandvideo') {
+    if (options.filter === Filter.VideoOnly || options.filter === Filter.AudioAndVideo) {
       return basicVideoFormats.map((fmt) => (
         <SelectItem key={fmt} value={fmt}>
           {fmt.toUpperCase()}
         </SelectItem>
       ));
     }
-    if (options.filter === 'audioonly') {
+    if (options.filter === Filter.AudioOnly) {
       return audioFormats.map((fmt) => (
         <SelectItem key={fmt} value={fmt}>
           {fmt.toUpperCase()}
         </SelectItem>
       ));
     }
-    if (options.filter === 'mergevideo') {
+    if (options.filter === Filter.MergeVideo) {
       return mergeFormats.map((fmt) => (
         <SelectItem key={fmt} value={fmt}>
           {fmt.toUpperCase()}
@@ -113,7 +142,7 @@ function App() {
   };
 
   const renderQualitySelector = () => {
-    if (options.filter === 'audioonly') {
+    if (options.filter === Filter.AudioOnly) {
       return (
         <div className="space-y-4">
           <Label className="text-sm font-medium">Audio Quality (1-10)</Label>
@@ -121,7 +150,7 @@ function App() {
             min={1}
             max={10}
             step={1}
-            value={[typeof options.quality === 'number' ? options.quality : 5]}
+            value={[typeof options.quality === 'number' ? options.quality : AudioQualityEnum.Q5]}
             onValueChange={([val]) => setOptions({ ...options, quality: val } as DownloadOptionsUnion)}
             className="py-6"
           />
@@ -131,7 +160,7 @@ function App() {
         </div>
       );
     }
-    if (options.filter === 'audioandvideo') {
+    if (options.filter === Filter.AudioAndVideo) {
       return (
         <div className="space-y-2">
           <Label className="text-sm font-medium">Quality</Label>
@@ -153,7 +182,7 @@ function App() {
         </div>
       );
     }
-    if (options.filter === 'videoonly' || options.filter === 'mergevideo') {
+    if (options.filter === Filter.VideoOnly || options.filter === Filter.MergeVideo) {
       return (
         <div className="space-y-2">
           <Label className="text-sm font-medium">Video Quality</Label>
@@ -221,10 +250,10 @@ function App() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="videoonly">Video Only</SelectItem>
-                        <SelectItem value="audioonly">Audio Only</SelectItem>
-                        <SelectItem value="audioandvideo">Audio and Video</SelectItem>
-                        <SelectItem value="mergevideo">Merge Video</SelectItem>
+                        <SelectItem value={Filter.VideoOnly}>Video Only</SelectItem>
+                        <SelectItem value={Filter.AudioOnly}>Audio Only</SelectItem>
+                        <SelectItem value={Filter.AudioAndVideo}>Audio and Video</SelectItem>
+                        <SelectItem value={Filter.MergeVideo}>Merge Video</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -232,7 +261,9 @@ function App() {
                     <Label className="text-sm font-medium">Format</Label>
                     <Select
                       value={options.format}
-                      onValueChange={(value) => setOptions({ ...options, format: value } as DownloadOptionsUnion)}
+                      onValueChange={(value) =>
+                        setOptions({ ...options, format: value } as DownloadOptionsUnion)
+                      }
                     >
                       <SelectTrigger className="bg-accent/5 h-12">
                         <SelectValue />
@@ -310,5 +341,3 @@ function App() {
     </div>
   );
 }
-
-export default App;
