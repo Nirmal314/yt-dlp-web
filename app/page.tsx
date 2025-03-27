@@ -21,6 +21,7 @@ import {
   VideoResolution,
   AudioQuality as AudioQualityEnum
 } from '@/types';
+import { Progress } from '@/components/ui/progress';
 
 export default function App() {
   const [url, setUrl] = useState('');
@@ -32,6 +33,7 @@ export default function App() {
     embedThumbnail: false,
     quality: VideoResolution.R480P,
   });
+  const [progress, setProgress] = useState<any>(null);
 
   const videoResolutions: VideoResolution[] = [
     VideoResolution.R2160P,
@@ -104,17 +106,41 @@ export default function App() {
     return regex.test(url);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!validateUrl(url)) {
       toast.error('Invalid URL. Please enter a valid YouTube or YouTube Music URL.');
       return;
     }
-    setIsLoading(true);
 
-    console.log({ url, options })
-    setTimeout(() => setIsLoading(false), 2000);
+    setIsLoading(true);
+    setProgress(null);
+
+    const params = new URLSearchParams({
+      url,
+      options: JSON.stringify(options),
+    });
+
+    const es = new EventSource(`/api/download?${params.toString()}`);
+
+    es.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+
+      setProgress(data);
+
+      if (data.status === 'finished' || data.status === 'error') {
+        es.close();
+        setIsLoading(false);
+      }
+    };
+
+    es.onerror = () => {
+      toast.error("Error receiving progress updates.");
+
+      es.close();
+      setIsLoading(false);
+    };
   };
 
   const renderFormatOptions = () => {
@@ -337,6 +363,34 @@ export default function App() {
             </div>
           </form>
         </CardContent>
+
+        {progress && (
+          <Card className="mt-8 border border-accent/20 rounded-xl p-6 shadow-lg">
+            <CardHeader className="text-center">
+              <CardTitle className="text-2xl font-bold text-primary">Download Progress</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <Progress value={progress.percentage} className="h-4 rounded-lg bg-accent/10" />
+                <p className="text-lg font-semibold text-center text-primary">
+                  {progress.percentage_str} Complete
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
+                <div className="text-right font-medium">Status:</div>
+                <div className="text-left">{progress.status}</div>
+                <div className="text-right font-medium">Downloaded:</div>
+                <div className="text-left">
+                  {progress.downloaded_str} / {progress.total_str}
+                </div>
+                <div className="text-right font-medium">Speed:</div>
+                <div className="text-left">{progress.speed_str}</div>
+                <div className="text-right font-medium">ETA:</div>
+                <div className="text-left">{progress.eta_str}</div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </Card>
     </div>
   );
