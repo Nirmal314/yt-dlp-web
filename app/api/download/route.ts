@@ -1,6 +1,6 @@
-// app/api/download-progress/route.ts
 import { NextResponse } from "next/server";
 import { singleDownload } from "@/actions/ytdlp";
+import { ProgressType } from "ytdlp-nodejs/lib/types/utils/types";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -19,15 +19,19 @@ export async function GET(request: Request) {
         const encoder = new TextEncoder();
 
         try {
-          await singleDownload(url, options, (data: any) => {
-            // Write SSE event with progress data
-            controller.enqueue(
-              encoder.encode(`data: ${JSON.stringify(data)}\n\n`)
-            );
-          });
+          const fileName = await singleDownload(
+            url,
+            options,
+            (data: ProgressType) => {
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify(data)}\n\n`)
+              );
+            }
+          );
+
           controller.enqueue(
             encoder.encode(
-              `data: ${JSON.stringify({ status: "finished" })}\n\n`
+              `data: ${JSON.stringify({ status: "finished", fileName })}\n\n`
             )
           );
         } catch (err: any) {
@@ -39,8 +43,9 @@ export async function GET(request: Request) {
               })}\n\n`
             )
           );
+        } finally {
+          controller.close();
         }
-        controller.close();
       },
     }),
     { headers: { "Content-Type": "text/event-stream" } }

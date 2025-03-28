@@ -110,36 +110,62 @@ export default function App() {
     e.preventDefault();
 
     if (!validateUrl(url)) {
-      toast.error('Invalid URL. Please enter a valid YouTube or YouTube Music URL.');
+      toast.error("Invalid URL. Please enter a valid YouTube or YouTube Music URL.");
       return;
     }
 
     setIsLoading(true);
     setProgress(null);
 
-    const params = new URLSearchParams({
-      url,
-      options: JSON.stringify(options),
-    });
-
-    const es = new EventSource(`/api/download?${params.toString()}`);
-
+    const es = new EventSource(`/api/download?url=${encodeURIComponent(url)}&options=${encodeURIComponent(JSON.stringify(options))}`);
     es.onmessage = (event) => {
       const data = JSON.parse(event.data);
-
       setProgress(data);
 
-      if (data.status === 'finished' || data.status === 'error') {
+      if (data.status === "finished") {
+        if (data.fileName) {
+          es.close();
+
+          setIsLoading(false);
+          setProgress(null);
+          toast.dismiss();
+
+          window.location.href = `/api/file?file=${encodeURIComponent(data.fileName)}`;
+
+          toast.success("Download successful!")
+
+          es.close();
+        } else {
+          console.log("Received 'finished' without fileName, waiting for next event...");
+          toast.loading("Please wait while we get your file...")
+
+          setTimeout(() => {
+            toast.dismiss()
+            toast.error("Unable to proceed, please try again later.")
+            es.close()
+          }, 30 * 1000);
+        }
+      } else if (data.status === "error") {
+        toast.dismiss()
+        toast.error(data.error || "An error occurred while downloading. Please try again later.")
+
         es.close();
+
         setIsLoading(false);
+        setProgress(null);
       }
     };
 
-    es.onerror = () => {
-      toast.error("Error receiving progress updates.");
+    es.onerror = (err) => {
+      console.error("SSE Error:", err);
+      toast.error("SSE Error", {
+        description: "An error occurred while receiving updates. Please try again later."
+      });
 
       es.close();
+
       setIsLoading(false);
+      setProgress(null);
     };
   };
 
