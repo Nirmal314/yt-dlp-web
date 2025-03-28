@@ -18,13 +18,25 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "File not found" }, { status: 404 });
   }
 
-  const fileBuffer = fs.readFileSync(filePath);
-  return new NextResponse(fileBuffer, {
-    headers: {
-      "Content-Type": "application/octet-stream",
-      "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(
-        fileName
-      )}`,
-    },
-  });
+  try {
+    const fileBuffer = fs.readFileSync(filePath);
+
+    // Delete the file from the server after reading it
+    fs.unlinkSync(filePath);
+
+    return new NextResponse(fileBuffer, {
+      headers: {
+        "Content-Type": "application/octet-stream",
+        "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(
+          fileName
+        )}`,
+      },
+    });
+  } catch (error) {
+    console.error("Error handling file:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Download, PlaySquare, Video, Youtube } from 'lucide-react';
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -34,6 +34,9 @@ export default function App() {
     quality: VideoResolution.R480P,
   });
   const [progress, setProgress] = useState<any>(null);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const esRef = useRef<EventSource | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const videoResolutions: VideoResolution[] = [
     VideoResolution.R2160P,
@@ -60,6 +63,13 @@ export default function App() {
     AudioFormat.ALAC,
   ];
   const avQualityOptions: AVQuality[] = [AVQuality.Highest, AVQuality.Lowest];
+
+  const manualClearTimeout = () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+  }
 
   useEffect(() => {
     if (options.filter === Filter.AudioOnly) {
@@ -97,6 +107,17 @@ export default function App() {
     }
   }, [options.filter]);
 
+  // Cleanup Effect for EventSource
+  useEffect(() => {
+    return () => {
+      if (esRef.current) {
+        esRef.current.close();
+        esRef.current = null;
+      }
+      manualClearTimeout();
+    };
+  }, []);
+
   const validateUrl = (url: string) => {
     if (!url) return false;
     if (url.startsWith('http')) {
@@ -109,48 +130,79 @@ export default function App() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    let toastId: string | number | null = null;
+
     if (!validateUrl(url)) {
-      toast.error("Invalid URL. Please enter a valid YouTube or YouTube Music URL.");
+      toastId = toast.error("Invalid URL. Please enter a valid YouTube or YouTube Music URL.");
       return;
     }
 
     setIsLoading(true);
     setProgress(null);
+    setIsCompleted(false);
 
     const es = new EventSource(`/api/download?url=${encodeURIComponent(url)}&options=${encodeURIComponent(JSON.stringify(options))}`);
-    es.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      setProgress(data);
+    esRef.current = es;
 
-      if (data.status === "finished") {
-        if (data.fileName) {
+    es.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        setProgress(data);
+
+        if (data.status === "finished") {
+          if (data.fileName) {
+
+            manualClearTimeout();
+
+            setIsCompleted(true);
+
+            es.close();
+            esRef.current = null;
+
+            setIsLoading(false);
+            setProgress(null);
+
+            if (toastId) toast.dismiss(toastId);
+
+            window.location.href = `/api/file?file=${encodeURIComponent(data.fileName)}`;
+            toast.success("Download successful!");
+          } else {
+            console.log("Received 'finished' without fileName, waiting for next event...");
+            toastId = toast.loading("Getting your file, do not refresh the page...");
+
+            timeoutRef.current = setTimeout(() => {
+              if (!isCompleted) {
+                if (toastId) toast.dismiss(toastId);
+
+                toast.error("Unable to proceed, please try again later.");
+
+                es.close();
+                esRef.current = null;
+
+                setIsLoading(false);
+                setProgress(null);
+              }
+            }, 3 * 60 * 1000); // 3 minutes
+          }
+        } else if (data.status === "error") {
+
+          manualClearTimeout();
+
+          if (toastId) toast.dismiss(toastId);
+          toast.error(data.error || "An error occurred while downloading. Please try again later.");
+
           es.close();
+          esRef.current = null;
 
           setIsLoading(false);
           setProgress(null);
-          toast.dismiss();
-
-          window.location.href = `/api/file?file=${encodeURIComponent(data.fileName)}`;
-
-          toast.success("Download successful!")
-
-          es.close();
-        } else {
-          console.log("Received 'finished' without fileName, waiting for next event...");
-          toast.loading("Please wait while we get your file...")
-
-          setTimeout(() => {
-            toast.dismiss()
-            toast.error("Unable to proceed, please try again later.")
-            es.close()
-          }, 30 * 1000);
         }
-      } else if (data.status === "error") {
-        toast.dismiss()
-        toast.error(data.error || "An error occurred while downloading. Please try again later.")
-
+      } catch (error) {
+        console.error("Failed to parse event data:", error);
+        if (toastId) toast.dismiss(toastId);
+        toast.error("Invalid server response. Please try again.");
         es.close();
-
+        esRef.current = null;
         setIsLoading(false);
         setProgress(null);
       }
@@ -158,11 +210,13 @@ export default function App() {
 
     es.onerror = (err) => {
       console.error("SSE Error:", err);
+      if (toastId) toast.dismiss(toastId);
       toast.error("SSE Error", {
         description: "An error occurred while receiving updates. Please try again later."
       });
 
       es.close();
+      esRef.current = null;
 
       setIsLoading(false);
       setProgress(null);
@@ -380,12 +434,12 @@ export default function App() {
                   </>
                 )}
               </Button>
-              <Button variant="ghost" asChild className="text-muted-foreground hover:text-foreground transition-colors">
+              {/* <Button variant="ghost" asChild className="text-muted-foreground hover:text-foreground transition-colors">
                 <a href="/playlist">
                   <PlaySquare className="mr-2" size={20} />
                   Download Playlist
                 </a>
-              </Button>
+              </Button> */}
             </div>
           </form>
         </CardContent>
@@ -397,7 +451,6 @@ export default function App() {
             </CardHeader>
             <CardContent className="space-y-6 flex items-center flex-col">
               <div className="space-y-4">
-                {/* <Progress value={progress.percentage} className="h-4 rounded-lg bg-accent/10" /> */}
                 <CircularProgress
                   value={progress.percentage}
                   size={165}
@@ -408,10 +461,6 @@ export default function App() {
                   className="stroke-slate-500/25"
                   progressClassName="stroke-slate-800"
                 />
-
-                {/* <p className="text-lg font-semibold text-center text-primary">
-                  {progress.percentage_str} Complete
-                </p> */}
               </div>
               <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
                 <div className="text-right font-medium">Status:</div>
