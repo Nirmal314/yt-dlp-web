@@ -17,6 +17,7 @@
     "@radix-ui/react-separator": "^1.1.2",
     "@radix-ui/react-slider": "^1.2.3",
     "@radix-ui/react-slot": "^1.1.2",
+    "@uploadthing/react": "^7.3.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.484.0",
@@ -27,6 +28,7 @@
     "sonner": "^2.0.1",
     "tailwind-merge": "^3.0.2",
     "tw-animate-css": "^1.2.4",
+    "uploadthing": "^7.6.0",
     "ytdlp-nodejs": "^0.1.5"
   },
   "devDependencies": {
