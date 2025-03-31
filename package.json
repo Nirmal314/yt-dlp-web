@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build",
+    "build": "pnpm i && node node_modules/ytdlp-nodejs/dist/scripts/download.js && next build",
     "start": "next start",
     "lint": "next lint"
   },

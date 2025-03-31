@@ -1,3 +1,0 @@
-{
-    "buildCommand": "npm i && node node_modules/ytdlp-nodejs/dist/scripts/download.js && next build"
-}
