@@ -15,6 +15,7 @@ export async function singleDownload(
   const file = await ytdlp.getFileAsync(url, {
     ...options,
     onProgress: (progress: VideoProgress) => {
+      console.log(`${progress.downloaded_str} / ${progress.total_str} %`);
       onProgress(progress);
     },
   });

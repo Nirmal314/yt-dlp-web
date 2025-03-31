@@ -1,0 +1,18 @@
+{
+    "version": 2,
+    "builds": [
+        {
+            "src": "index.js",
+            "use": "@vercel/node",
+            "config": {
+                "includeFiles": [
+                    "node_modules/.bin/yt-dlp*",
+                    "node_modules/.bin/ffmpeg-*"
+                ]
+            }
+        }
+    ],
+    "build": {
+        "command": "npm install && node node_modules/ytdlp-nodejs/dist/scripts/download.js"
+    }
+}
