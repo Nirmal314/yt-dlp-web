@@ -12,5 +12,5 @@
             }
         }
     ],
-    "buildCommand": "node node_modules/ytdlp-nodejs/dist/scripts/download.js"
+    "buildCommand": "node node_modules/ytdlp-nodejs/dist/scripts/download.js && next build"
 }
