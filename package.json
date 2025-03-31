@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "pnpm i ytdlp-nodejs && pnpm approve-builds -g && node lib/download.js && next build",
+    "build": "pnpm i ytdlp-nodejs@2.0.4 && pnpm approve-builds -g && node lib/download.js && next build",
     "start": "next start",
     "lint": "next lint"
   },
@@ -39,11 +39,5 @@
     "@types/react-dom": "^19",
     "tailwindcss": "^4",
     "typescript": "^5"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "sharp",
-      "ytdlp-nodejs"
-    ]
   }
 }
