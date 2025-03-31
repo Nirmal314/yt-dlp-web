@@ -35,6 +35,7 @@ export async function GET(request: Request) {
             )
           );
         } catch (err: any) {
+          console.log("Error at /api/download", err);
           controller.enqueue(
             encoder.encode(
               `data: ${JSON.stringify({
