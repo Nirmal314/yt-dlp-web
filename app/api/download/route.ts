@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { singleDownload } from "@/actions/ytdlp";
-import { ProgressType } from "ytdlp-nodejs/lib/types/utils/types";
+import { VideoProgress } from "ytdlp-nodejs";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -17,21 +17,21 @@ export async function GET(request: Request) {
     new ReadableStream({
       async start(controller) {
         const encoder = new TextEncoder();
-
         try {
-          const fileName = await singleDownload(
+          const fileId = await singleDownload(
             url,
             options,
-            (data: ProgressType) => {
+            (data: VideoProgress) => {
               controller.enqueue(
                 encoder.encode(`data: ${JSON.stringify(data)}\n\n`)
               );
             }
           );
 
+          // finally enqueue fileId
           controller.enqueue(
             encoder.encode(
-              `data: ${JSON.stringify({ status: "finished", fileName })}\n\n`
+              `data: ${JSON.stringify({ status: "finished", fileId })}\n\n`
             )
           );
         } catch (err: any) {

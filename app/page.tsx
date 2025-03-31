@@ -136,22 +136,19 @@ export default function App() {
       toastId = toast.error("Invalid URL. Please enter a valid YouTube or YouTube Music URL.");
       return;
     }
-
     setIsLoading(true);
     setProgress(null);
     setIsCompleted(false);
 
     const es = new EventSource(`/api/download?url=${encodeURIComponent(url)}&options=${encodeURIComponent(JSON.stringify(options))}`);
     esRef.current = es;
-
     es.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
         setProgress(data);
 
         if (data.status === "finished") {
-          if (data.fileName) {
-
+          if (data.fileId) {
             manualClearTimeout();
 
             setIsCompleted(true);
@@ -164,10 +161,9 @@ export default function App() {
 
             if (toastId) toast.dismiss(toastId);
 
-            window.location.href = `/api/file?file=${encodeURIComponent(data.fileName)}`;
+            window.location.href = `/api/file?file=${encodeURIComponent(data.fileId)}`;
             toast.success("Download successful!");
           } else {
-            console.log("Received 'finished' without fileName, waiting for next event...");
             toastId = toast.loading("Getting your file, do not refresh the page...");
 
             timeoutRef.current = setTimeout(() => {

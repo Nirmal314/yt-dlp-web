@@ -1,42 +1,27 @@
+import { fileCache } from "@/lib/file-cache";
 import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const fileName = searchParams.get("file");
+  const id = searchParams.get("file");
 
-  if (!fileName) {
-    return NextResponse.json(
-      { error: "Missing file parameter" },
-      { status: 400 }
-    );
+  if (!id) {
+    return new NextResponse("Missing file id", { status: 400 });
   }
 
-  const filePath = path.join(process.cwd(), "downloads", fileName);
-  if (!fs.existsSync(filePath)) {
-    return NextResponse.json({ error: "File not found" }, { status: 404 });
+  const file = fileCache.get(id);
+
+  if (!file) {
+    return new NextResponse("File not found or expired", { status: 404 });
   }
 
-  try {
-    const fileBuffer = fs.readFileSync(filePath);
+  fileCache.delete(id);
 
-    // Delete the file from the server after reading it
-    fs.unlinkSync(filePath);
+  const fileBuffer = await file.arrayBuffer();
 
-    return new NextResponse(fileBuffer, {
-      headers: {
-        "Content-Type": "application/octet-stream",
-        "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(
-          fileName
-        )}`,
-      },
-    });
-  } catch (error) {
-    console.error("Error handling file:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
-  }
+  const headers = new Headers({
+    "Content-Disposition": `attachment; filename="${file.name}"`,
+    "Content-Type": file.type,
+  });
+  return new NextResponse(fileBuffer, { headers });
 }
