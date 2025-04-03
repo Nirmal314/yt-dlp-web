@@ -1,6 +1,16 @@
 import { YtDlp } from "ytdlp-nodejs";
 
-const ytdlp = new YtDlp();
+const isDev = process.env.NODE_ENV === "development";
+
+let ytdlp;
+
+if (isDev) {
+  ytdlp = new YtDlp();
+} else {
+  ytdlp = new YtDlp({
+    binaryPath: "node_modules/ytdlp-nodejs/bin/yt-dlp",
+  });
+}
 
 const check = async () => {
   const isInstalled = await ytdlp.checkInstallationAsync({ ffmpeg: true });
