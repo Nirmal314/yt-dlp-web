@@ -2,13 +2,13 @@ import { YtDlp } from "ytdlp-nodejs";
 
 const isDev = process.env.NODE_ENV === "development";
 
-let ytdlp;
+let ytdlp: YtDlp;
 
 if (isDev) {
   ytdlp = new YtDlp();
 } else {
   ytdlp = new YtDlp({
-    binaryPath: "node_modules/ytdlp-nodejs/bin/yt-dlp",
+    binaryPath: "public/yt-dlp",
   });
 }
 
