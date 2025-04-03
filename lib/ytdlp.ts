@@ -8,7 +8,7 @@ if (isDev) {
   ytdlp = new YtDlp();
 } else {
   ytdlp = new YtDlp({
-    binaryPath: "public/yt-dlp",
+    binaryPath: "public/yt-dlp.exe",
   });
 }
 
