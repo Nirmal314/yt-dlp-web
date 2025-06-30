@@ -1094,7 +1094,7 @@ uuid@^11.1.0:
   resolved "https://registry.yarnpkg.com/uuid/-/uuid-11.1.0.tgz#9549028be1753bb934fc96e2bca09bb4105ae912"
   integrity sha512-0/A9rDy9P7cJ+8w1c9WD9V//9Wj15Ce2MPz8Ri6032usz+NfePxx5AcN3bN+r6ZL6jEo066/yNYB3tn4pQEx+A==
 
-ytdlp-nodejs@^2.0.5:
-  version "2.0.5"
-  resolved "https://registry.yarnpkg.com/ytdlp-nodejs/-/ytdlp-nodejs-2.0.5.tgz#5f8f17c8592dbe5058582b5dcb4d538f5d4b35c2"
-  integrity sha512-n3FGUpBl8ARMMCJ6qpfuKepvhZUP6lqGtChcdUVEw2nlVTwYXw7mfxrC7V+GxWBw/zT2ZlrIA0XO5rPFp8GRBQ==
+yt-dlp-wrap@^2.3.12:
+  version "2.3.12"
+  resolved "https://registry.yarnpkg.com/yt-dlp-wrap/-/yt-dlp-wrap-2.3.12.tgz#35601d4e4fad12c35a6c25041a6d6404cf5066d5"
+  integrity sha512-P8fJ+6M1YjukyJENCTviNLiZ8mokxprR54ho3DsSKPWDcac489OjRiStGEARJr6un6ETS6goTn4CWl/b/rM3aA==

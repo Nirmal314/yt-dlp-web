@@ -33,10 +33,6 @@ export default function App() {
     embedThumbnail: false,
     quality: VideoResolution.R480P,
   });
-  const [progress, setProgress] = useState<any>(null);
-  const [isCompleted, setIsCompleted] = useState(false);
-  const esRef = useRef<EventSource | null>(null);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const videoResolutions: VideoResolution[] = [
     VideoResolution.R2160P,
@@ -64,60 +60,6 @@ export default function App() {
   ];
   const avQualityOptions: AVQuality[] = [AVQuality.Highest, AVQuality.Lowest];
 
-  const manualClearTimeout = () => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-    }
-  }
-
-  useEffect(() => {
-    if (options.filter === Filter.AudioOnly) {
-      setOptions({
-        filter: Filter.AudioOnly,
-        format: AudioFormat.MP3,
-        embedSubs: options.embedSubs,
-        embedThumbnail: options.embedThumbnail,
-        quality: AudioQualityEnum.Q5,
-      });
-    } else if (options.filter === Filter.AudioAndVideo) {
-      setOptions({
-        filter: Filter.AudioAndVideo,
-        format: VideoFormat.MP4,
-        embedSubs: options.embedSubs,
-        embedThumbnail: options.embedThumbnail,
-        quality: AVQuality.Highest,
-      });
-    } else if (options.filter === Filter.MergeVideo) {
-      setOptions({
-        filter: Filter.MergeVideo,
-        format: MergeFormat.MP4,
-        embedSubs: options.embedSubs,
-        embedThumbnail: options.embedThumbnail,
-        quality: VideoResolution.R1080P,
-      });
-    } else {
-      setOptions({
-        filter: Filter.VideoOnly,
-        format: VideoFormat.MP4,
-        embedSubs: options.embedSubs,
-        embedThumbnail: options.embedThumbnail,
-        quality: VideoResolution.R1080P,
-      });
-    }
-  }, [options.filter]);
-
-  // Cleanup Effect for EventSource
-  useEffect(() => {
-    return () => {
-      if (esRef.current) {
-        esRef.current.close();
-        esRef.current = null;
-      }
-      manualClearTimeout();
-    };
-  }, []);
-
   const validateUrl = (url: string) => {
     if (!url) return false;
     if (url.startsWith('http')) {
@@ -127,96 +69,13 @@ export default function App() {
     return regex.test(url);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    let toastId: string | number | null = null;
-
     if (!validateUrl(url)) {
-      toastId = toast.error("Invalid URL. Please enter a valid YouTube or YouTube Music URL.");
+      toast.error("Invalid URL. Please enter a valid YouTube or YouTube Music URL.");
       return;
     }
-    setIsLoading(true);
-    setProgress(null);
-    setIsCompleted(false);
-
-    const es = new EventSource(`/api/download?url=${encodeURIComponent(url)}&options=${encodeURIComponent(JSON.stringify(options))}`);
-    esRef.current = es;
-    es.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        setProgress(data);
-
-        if (data.status === "finished") {
-          if (data.fileId) {
-            manualClearTimeout();
-
-            setIsCompleted(true);
-
-            es.close();
-            esRef.current = null;
-
-            setIsLoading(false);
-            setProgress(null);
-
-            if (toastId) toast.dismiss(toastId);
-
-            window.location.href = `/api/file?file=${encodeURIComponent(data.fileId)}`;
-            toast.success("Download successful!");
-          } else {
-            toastId = toast.loading("Getting your file, do not refresh the page...");
-
-            timeoutRef.current = setTimeout(() => {
-              if (!isCompleted) {
-                if (toastId) toast.dismiss(toastId);
-
-                toast.error("Unable to proceed, please try again later.");
-
-                es.close();
-                esRef.current = null;
-
-                setIsLoading(false);
-                setProgress(null);
-              }
-            }, 3 * 60 * 1000); // 3 minutes
-          }
-        } else if (data.status === "error") {
-
-          manualClearTimeout();
-
-          if (toastId) toast.dismiss(toastId);
-          toast.error(data.error || "An error occurred while downloading. Please try again later.");
-
-          es.close();
-          esRef.current = null;
-
-          setIsLoading(false);
-          setProgress(null);
-        }
-      } catch (error) {
-        console.error("Failed to parse event data:", error);
-        if (toastId) toast.dismiss(toastId);
-        toast.error("Invalid server response. Please try again.");
-        es.close();
-        esRef.current = null;
-        setIsLoading(false);
-        setProgress(null);
-      }
-    };
-
-    es.onerror = (err) => {
-      console.error("SSE Error:", err);
-      if (toastId) toast.dismiss(toastId);
-      toast.error("SSE Error", {
-        description: "An error occurred while receiving updates. Please try again later."
-      });
-
-      es.close();
-      esRef.current = null;
-
-      setIsLoading(false);
-      setProgress(null);
-    };
+    console.log({ url, options });
   };
 
   const renderFormatOptions = () => {
@@ -439,40 +298,6 @@ export default function App() {
             </div>
           </form>
         </CardContent>
-
-        {progress && (
-          <Card className="mt-8 border border-accent/20 rounded-xl p-6 shadow-lg">
-            <CardHeader className="text-center">
-              <CardTitle className="text-2xl font-bold text-primary">Download Progress</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6 flex items-center flex-col">
-              <div className="space-y-4">
-                <CircularProgress
-                  value={progress.percentage}
-                  size={165}
-                  strokeWidth={15}
-                  showLabel
-                  labelClassName="text-xl font-bold"
-                  renderLabel={(progress) => `${progress}%`}
-                  className="stroke-slate-500/25"
-                  progressClassName="stroke-slate-800"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
-                <div className="text-right font-medium">Status:</div>
-                <div className="text-left">{progress.status}</div>
-                <div className="text-right font-medium">Downloaded:</div>
-                <div className="text-left">
-                  {progress.downloaded_str} / {progress.total_str}
-                </div>
-                <div className="text-right font-medium">Speed:</div>
-                <div className="text-left">{progress.speed_str}</div>
-                <div className="text-right font-medium">ETA:</div>
-                <div className="text-left">{progress.eta_str}</div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
       </Card>
     </div>
   );
